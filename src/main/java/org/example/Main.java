@@ -1,15 +1,39 @@
 package org.example;
 
+import com.google.gson.Gson;
+import org.example.model.Document;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 
 public class Main {
-    public static void main(String[] args) {
+    public static void main(String[] args)  {
+        // Создаем экземпляр класса CrptApi
+        CrptApi api = new CrptApi(TimeUnit.SECONDS,1,"https://ismp.crpt.ru/api/v3/lk/documents/create");
 
-        String apiUrl = "https://ismp.crpt.ru/api/v3/lk/documents/create";
-        CrptApi crptApi = new CrptApi(apiUrl, 1, TimeUnit.SECONDS);
-        String json = CrptApi.readJsonFromFile("src/main/resources/document.json");
-        CrptApi.Document document = CrptApi.convertJsonToDocument(json);
+        // Читаем JSON из файла
+        String json = "";
+        try {
+            byte[] bytes = Files.readAllBytes(Paths.get("src/main/resources/document.json"));
+            json = new String(bytes, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // Преобразуем JSON в объект Document
+        Gson gson = new Gson();
+        Document document = gson.fromJson(json, Document.class);
+
+        // Определяем подпись
         String signature = "signature";
-        crptApi.createDocument(document, signature);
+
+        // Вызываем метод создания документа createDocument()
+        api.createDocument(document, signature);
+
+        // Завершаем работу с api
+        api.shutdown();
     }
 }

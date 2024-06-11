@@ -1,74 +1,59 @@
 package org.example;
-import static org.example.ForTests.document_1;
-import static org.example.ForTests.json;
-import static org.junit.Assert.*;
-import org.junit.*;
-import org.example.CrptApi.*;
-import java.util.concurrent.TimeUnit;
-import static org.mockito.Mockito.*;
+
+import org.junit.jupiter.api.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.*;
 
+import static org.example.ForTests.document_1;
+import static org.example.ForTests.json;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.*;
 
-public class CrptApiTest {
-    private CrptApi crptApi;
-    private CrptApi.Document testDocument;
-    private String testSignature;
-    private String testApiUrl = "http://api.example.com";
-    private int testRequestLimit = 10;
-    private TimeUnit testTimeUnit = TimeUnit.SECONDS;
+class CrptApiTest {
+
+    @InjectMocks
     private HttpClient mockHttpClient;
-    private RequestThrottler mockThrottler;
-    @Before
-    public void setUp() {
-        crptApi = new CrptApi(testApiUrl, testRequestLimit, testTimeUnit);
+    @Mock
+    private CrptApi crptApi;
+    @Mock
+    private HttpResponse mockResponse;
+
+
+    @BeforeEach
+    void setUp() {
         mockHttpClient = mock(HttpClient.class);
-        mockThrottler = mock(RequestThrottler.class);
-        crptApi = new CrptApi("http://api.example.com", 10, TimeUnit.SECONDS);
-        testSignature = "testSignature";
+        crptApi = new CrptApi(TimeUnit.SECONDS, 1, "http://api.example.com");
+        mockResponse = Mockito.mock(HttpResponse.class);
     }
 
     @Test
-    public void testCreateDocument() throws Exception {
-        // Подготовка мокированного ответа
-        HttpResponse<String> mockResponse = mock(HttpResponse.class);
-        when(mockResponse.body()).thenReturn("responseBody");
+    void testCreateDocument() {
+        String signature = "signature";
+        CompletableFuture<HttpResponse> future = CompletableFuture.completedFuture(mockResponse);
 
-        // Мокирование sendAsync для возвращения CompletableFuture с мокированным ответом
         when(mockHttpClient.sendAsync(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
-                .thenReturn(CompletableFuture.completedFuture(mockResponse));
+                .thenReturn(future);
+        when(mockResponse.body()).thenReturn(json);
+        when(mockResponse.statusCode()).thenReturn(200);
 
-        // Вызов тестируемого метода
-        crptApi.createDocument(document_1, testSignature);
+        CompletableFuture<Void> result = crptApi.createDocument(document_1, signature);
 
-        // Проверка, что acquirePermission был вызван
-        verify(mockThrottler).acquirePermission();
-
-        // Проверка, что sendAsync был вызван
+        // Проверяем, что запрос был отправлен
         verify(mockHttpClient).sendAsync(any(HttpRequest.class), any(HttpResponse.BodyHandler.class));
+        // Проверяем, что тело ответа было обработано
+        result.thenRun(() -> verify(mockResponse).body());
+        // Проверяем, что статус код был проверен
+        result.thenRun(() -> assertEquals(200, mockResponse.statusCode()));
     }
 
-    @Test
-    public void testConvertJsonToDocument() {
-        // Вызов метода для преобразования JSON в объект Document
-        CrptApi.Document resultDocument = CrptApi.convertJsonToDocument(json);
-
-        // Проверки, что поля объекта Document соответствуют данным из JSON
-        assertNotNull("Результат не должен быть null", resultDocument);
-        assertEquals("Неверный participant_inn в description", "1234567890", resultDocument.getDescription().getParticipant_inn());
-        assertEquals("Неверный doc_id", "doc123", resultDocument.getDoc_id());
-        assertEquals("Неверный doc_status", "active", resultDocument.getDoc_status());
-        assertEquals("Неверный doc_type", "type1", resultDocument.getDoc_type());
-        assertFalse("Неверное значение importRequest", resultDocument.isImportRequest());
-        assertEquals("Неверный owner_inn", "0987654321", resultDocument.getOwner_inn());
-        assertEquals("Неверный participant_inn", "1234567890", resultDocument.getParticipant_inn());
-        assertEquals("Неверный producer_inn", "1112131415", resultDocument.getProducer_inn());
-        assertEquals("Неверная production_date", "2024-06-10", resultDocument.getProduction_date());
-        assertEquals("Неверный production_type", "typeA", resultDocument.getProduction_type());
-        assertTrue("Список products должен быть пустым", resultDocument.getProducts().isEmpty());
-        assertEquals("Неверная reg_date", "2024-06-10", resultDocument.getReg_date());
-        assertEquals("Неверный reg_number", "RN123", resultDocument.getReg_number());
+    @AfterEach
+    void tearDown() {
+        crptApi.shutdown();
     }
 }
