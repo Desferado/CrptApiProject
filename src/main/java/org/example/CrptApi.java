@@ -2,11 +2,14 @@ package org.example;
 
 
 import com.google.gson.Gson;
-import org.example.model.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.List;
 import java.util.concurrent.*;
 
 public class CrptApi {
@@ -52,7 +55,6 @@ public class CrptApi {
      * Метод создает и возвращает новый HTTP-запрос с использованием данных документа и подписи.
      * @param document
      * @param signature
-     * @return
      */
     private HttpRequest buildRequest(Document document, String signature) {
         Gson gson = new Gson();
@@ -77,6 +79,52 @@ public class CrptApi {
         } catch (InterruptedException e) {
             scheduler.shutdownNow();
         }
+    }
+
+    @AllArgsConstructor
+    @Getter
+    @Setter
+    public static class Description {
+        private String participant_inn;
+    }
+
+    /**
+     * Класс документа
+     */
+    @AllArgsConstructor
+    @Setter
+    @Getter
+    public static class Document {
+        private Description description;
+        private String doc_id;
+        private String doc_status;
+        private String doc_type;
+        private boolean importRequest;
+        private String owner_inn;
+        private String participant_inn;
+        private String producer_inn;
+        private String production_date;
+        private String production_type;
+        private List<Product> products;
+        private String reg_date;
+        private String reg_number;
+    }
+
+
+    @AllArgsConstructor
+    @Setter
+    @Getter
+
+    public static class Product {
+        private String certificate_document;
+        private String certificate_document_date;
+        private String certificate_document_number;
+        private String owner_inn;
+        private String producer_inn;
+        private String production_date;
+        private String tnved_code;
+        private String uit_code;
+        private String uitu_code;
     }
 }
 

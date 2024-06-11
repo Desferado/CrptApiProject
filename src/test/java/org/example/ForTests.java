@@ -1,5 +1,5 @@
 package org.example;
-import org.example.model.*;
+import org.example.CrptApi.*;
 
 public class ForTests {
     public static Description description_1 = new Description("description_1");

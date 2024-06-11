@@ -1,7 +1,7 @@
 package org.example;
 
 import com.google.gson.Gson;
-import org.example.model.Document;
+import org.example.CrptApi.Document;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
